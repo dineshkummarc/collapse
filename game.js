@@ -19,7 +19,10 @@
 			width: width,
 			height: height,
 			update: update,
-			render: render
+			render: render,
+			mousedown: function (x, y) {
+				console.log(x, y);
+			}
 		});
 	}());
 
@@ -37,6 +40,23 @@
 			canvas.width = game.width;
 			canvas.height = game.height;
 			document.body.appendChild(canvas);
+
+			/* Mouse event for canvas */
+			if (typeof game.mousedown === 'function') {
+				canvas.addEventListener('mousemove', function (e) {
+					var x, y;
+					x = e.offsetX;
+					y = e.offsetY;
+
+					if (typeof x === 'undefined' || typeof y === 'undefined') {
+						/* Stupid Firefox ... */
+						x = e.pageX - canvas.offsetLeft;
+						y = e.pageY - canvas.offsetTop;
+					}
+
+					return game.mousedown(x, y);
+				}, false);
+			}
 			
 			return canvas.getContext('2d');
 		}());
