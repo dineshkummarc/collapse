@@ -3,7 +3,7 @@
 
 	/* Actual game */
 	game = (function () {
-		var width, height, board, colors;
+		var width, height, board, tiles;
 		width = 400;
 		height =  400;
 
@@ -23,28 +23,38 @@
 				return ({
 					x: (key % columns) * size,
 					y: Math.floor(key / rows) * size,
-					type: rand(0, colors.length),
+					type: rand(0, tiles.length),
 					size: size
 				});
 			});
 		}
 
-		function start(ctx) {
-			colors = ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#f0f'].map(function (color) {
-				var gradient = ctx.createLinearGradient(0, 0, 10, 10);
+		/* Pre-render the gradient color tiles */
+		function createTiles(size, colors) {
+			var ctx, buffer = document.createElement('canvas');
+			buffer.width = size;
+			buffer.height = size;
+			ctx = buffer.getContext('2d');
+
+			return colors.map(function (color) {
+				var gradient = ctx.createLinearGradient(0, 0, size, size);
 				gradient.addColorStop(0, '#fff');
-				gradient.addColorStop(.25, '#fff');
 				gradient.addColorStop(1, color);
 
-				return gradient;
+				ctx.fillStyle = gradient;
+				ctx.fillRect(0, 0, size, size);
+
+				return ctx.getImageData(0, 0, size, size);
 			});
-
-			reset();
 		}
-		
-		function reset(ctx) {
 
+		function reset() {
 			board = createBoard(20, 20, 20);
+		}
+
+		function start() {
+			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#f0f']);
+			reset();
 		}
 
 		function update(ms) {
@@ -52,11 +62,7 @@
 
 		function render(ctx) {
 			board.forEach(function (tile) {
-				ctx.save();
-				ctx.translate(tile.x, tile.y);
-				ctx.fillStyle = colors[tile.type];
-				ctx.fillRect(0, 0, tile.size, tile.size);
-				ctx.restore();
+				ctx.putImageData(tiles[tile.type], tile.x, tile.y);
 			});
 		}
 
@@ -119,7 +125,7 @@
 
 		return ({
 			start: function () {
-				game.start(ctx);
+				game.start();
 				loop();
 			}
 		});
