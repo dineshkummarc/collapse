@@ -6,7 +6,6 @@
 		var width, height, board, colors;
 		width = 400;
 		height =  400;
-		colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
 
 		function rand(min, max) {
 			return min + Math.floor(Math.random() * (max - min));
@@ -29,8 +28,22 @@
 				});
 			});
 		}
+
+		function start(ctx) {
+			colors = ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#f0f'].map(function (color) {
+				var gradient = ctx.createLinearGradient(0, 0, 10, 10);
+				gradient.addColorStop(0, '#fff');
+				gradient.addColorStop(.25, '#fff');
+				gradient.addColorStop(1, color);
+
+				return gradient;
+			});
+
+			reset();
+		}
 		
-		function reset() {
+		function reset(ctx) {
+
 			board = createBoard(20, 20, 20);
 		}
 
@@ -39,8 +52,11 @@
 
 		function render(ctx) {
 			board.forEach(function (tile) {
+				ctx.save();
+				ctx.translate(tile.x, tile.y);
 				ctx.fillStyle = colors[tile.type];
-				ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
+				ctx.fillRect(0, 0, tile.size, tile.size);
+				ctx.restore();
 			});
 		}
 
@@ -49,9 +65,7 @@
 			height: height,
 			update: update,
 			render: render,
-			start: function () {
-				reset();
-			},
+			start: 	start,
 			mousedown: function (x, y) {
 			}
 		});
@@ -105,7 +119,7 @@
 
 		return ({
 			start: function () {
-				game.start();
+				game.start(ctx);
 				loop();
 			}
 		});
