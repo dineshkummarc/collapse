@@ -1,18 +1,47 @@
 (function () {
-	var game, engine;
+	var game, engine, board;
 
 	/* Actual game */
 	game = (function () {
-		var width, height;
+		var width, height, board, colors;
 		width = 400;
 		height =  400;
+		colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+
+		function rand(min, max) {
+			return min + Math.floor(Math.random() * (max - min));
+		}
+
+		function createArray(size, defaultValue) {
+			var defaultValue = defaultValue || 0;
+			return new Array(size).join('x').split('x').map(function () {
+				return defaultValue;
+			});
+		}
+
+		function createBoard(columns, rows, size) {
+			return createArray(columns * rows).map(function (value, key) {
+				return ({
+					x: (key % columns) * size,
+					y: Math.floor(key / rows) * size,
+					type: rand(0, colors.length),
+					size: size
+				});
+			});
+		}
+		
+		function reset() {
+			board = createBoard(20, 20, 20);
+		}
 
 		function update(ms) {
 		}
 
 		function render(ctx) {
-			ctx.fillStyle = '#f00';
-			ctx.fillRect(0, 0, 10, 10);
+			board.forEach(function (tile) {
+				ctx.fillStyle = colors[tile.type];
+				ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
+			});
 		}
 
 		return ({
@@ -20,8 +49,10 @@
 			height: height,
 			update: update,
 			render: render,
+			start: function () {
+				reset();
+			},
 			mousedown: function (x, y) {
-				console.log(x, y);
 			}
 		});
 	}());
@@ -74,6 +105,7 @@
 
 		return ({
 			start: function () {
+				game.start();
 				loop();
 			}
 		});
