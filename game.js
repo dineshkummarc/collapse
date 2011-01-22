@@ -5,7 +5,7 @@
 	game = (function () {
 		var width, height, board, tiles;
 		width = 400;
-		height =  400;
+		height =  450;
 
 		function rand(min, max) {
 			return min + Math.floor(Math.random() * (max - min));
@@ -62,17 +62,24 @@
 		}
 
 		function start() {
-			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#f0f']);
+			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
 			reset();
 		}
 
 		function update(ms) {
 		}
 
-		function render(ctx) {
+		function render(ctx, fps) {
 			board.forEach(function (tile) {
 				ctx.putImageData(tiles[tile.type], tile.x, tile.y);
 			});
+
+			ctx.fillStyle = '#fff';
+			ctx.fillRect(0, 400, width, height);
+			ctx.fillStyle = '#000';
+			ctx.font = '20px calibri, verdana, tahoma, serif';
+			ctx.textBaseline = 'top';
+			ctx.fillText('FPS: ' + fps, 10, 410);
 		}
 
 		return ({
@@ -88,7 +95,7 @@
 
 	/* Engine (timing, events, browser setup) */
 	engine = (function () {
-		var lastUpdate, now, ctx;
+		var lastUpdate, now, delta, fpsTimer = 0, fps = 0, frames = 0, ctx;
 		
 		Date.now = Date.now || (function () {
 			return new Date().getTime();
@@ -126,8 +133,21 @@
 		lastUpdate = Date.now();
 		function loop() {
 			now = Date.now();
-			game.update(lastUpdate-now);
-			game.render(ctx);
+			delta = now - lastUpdate;
+
+			/* Calculate FPS */
+			fpsTimer += delta;
+			while (fpsTimer >= 1000) {
+				fpsTimer -= 1000;
+				fps = '' + frames;
+				frames = 0;
+			}
+
+			/* Tell game to update/render */
+			game.update(delta);
+			game.render(ctx, fps);
+
+			frames += 1;
 			lastUpdate = Date.now();
 			setTimeout(loop, 40);
 		}
