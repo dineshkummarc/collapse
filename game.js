@@ -3,7 +3,7 @@
 
 	/* Actual game */
 	game = (function () {
-		var width, height, board, tiles;
+		var width, height, board, tiles, selection;
 		width = 400;
 		height =  450;
 
@@ -20,12 +20,19 @@
 
 		function createBoard(columns, rows, size) {
 			return createArray(columns * rows).map(function (value, key) {
-				return ({
+				var tile = {
 					x: (key % columns) * size,
 					y: Math.floor(key / rows) * size,
 					type: rand(0, tiles.length),
-					size: size
-				});
+					size: size,
+					selected: false
+				};
+
+				/* Setup new "target" positions (for animation) */
+				tile.tx = tile.x; // target x
+				tile.ty = tile.y; // target y
+
+				return tile;
 			});
 		}
 
@@ -63,7 +70,36 @@
 
 		function start() {
 			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
+			selection = []; // selected tiles
 			reset();
+		}
+
+		/* Convert x, y mouse coordinates to tile index */
+		function pickTile(x, y) {
+			var index = Math.floor(y / 20) * 20 + Math.floor(x / 20);
+			if (index < 0 || index >= board.length) {
+				return -1;
+			}
+
+			return index;
+		}
+
+		function mousedown(x, y) {
+			var index = pickTile(x, y);
+			if (index !== -1) {
+				board[index].type = 2;
+			}
+
+			return false;
+		}
+
+		function mousemove(x, y) {
+			var index = pickTile(x, y);
+			if (index !== -1) {
+				board[pickTile(x, y)].selected = true;
+			}
+
+			return false;
 		}
 
 		function update(ms) {
@@ -72,6 +108,10 @@
 		function render(ctx, fps) {
 			board.forEach(function (tile) {
 				ctx.putImageData(tiles[tile.type], tile.x, tile.y);
+				if (tile.selected) {
+					ctx.fillStyle = 'rgba(255, 255, 255, .5)';
+					ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
+				}
 			});
 
 			ctx.fillStyle = '#fff';
@@ -88,8 +128,8 @@
 			update: update,
 			render: render,
 			start: 	start,
-			mousedown: function (x, y) {
-			}
+			mousedown: mousedown,
+			mousemove: mousemove
 		});
 	}());
 
@@ -108,22 +148,30 @@
 			canvas.height = game.height;
 			document.body.appendChild(canvas);
 
-			/* Mouse event for canvas */
-			if (typeof game.mousedown === 'function') {
-				canvas.addEventListener('mousemove', function (e) {
-					var x, y;
-					x = e.offsetX;
-					y = e.offsetY;
+			/* Prevent annoying text-selection when clicking quickly */
+			canvas.addEventListener('selectstart', function (e) {
+				e.preventDefault();
+				return false;
+			}, false);
 
-					if (typeof x === 'undefined' || typeof y === 'undefined') {
-						/* Stupid Firefox ... */
-						x = e.pageX - canvas.offsetLeft;
-						y = e.pageY - canvas.offsetTop;
-					}
+			/* Mouse events for canvas */
+			['mousedown', 'mousemove'].forEach(function (event) {
+				if (typeof game[event] === 'function') {
+					canvas.addEventListener(event, function (e) {
+						var x, y;
+						x = e.offsetX;
+						y = e.offsetY;
 
-					return game.mousedown(x, y);
-				}, false);
-			}
+						if (typeof x === 'undefined' || typeof y === 'undefined') {
+							/* Stupid Firefox ... */
+							x = e.pageX - canvas.offsetLeft;
+							y = e.pageY - canvas.offsetTop;
+						}
+
+						return game[event](x, y);
+					}, false);
+				}
+			});
 			
 			return canvas.getContext('2d');
 		}());
