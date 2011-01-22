@@ -3,7 +3,7 @@
 
 	/* Actual game */
 	game = (function () {
-		var width, height, board, tiles, selection;
+		var width, height, board, tiles, selected;
 		width = 400;
 		height =  450;
 
@@ -19,13 +19,12 @@
 		}
 
 		function createBoard(columns, rows, size) {
-			return createArray(columns * rows).map(function (value, key) {
+			var board = createArray(columns * rows).map(function (value, key) {
 				var tile = {
 					x: (key % columns) * size,
 					y: Math.floor(key / rows) * size,
 					type: rand(0, tiles.length),
-					size: size,
-					selected: false
+					size: size
 				};
 
 				/* Setup new "target" positions (for animation) */
@@ -34,6 +33,10 @@
 
 				return tile;
 			});
+
+			board.columns = columns;
+			board.rows = rows;
+			return board;
 		}
 
 		function darkenColor(color) {
@@ -64,19 +67,52 @@
 			});
 		}
 
+		function getAdjacentTiles(tile) {
+			var x, y, type, matches = [];
+			x = Math.floor(tile % board.columns);
+			y = Math.floor(tile / board.rows);
+
+			type = board[tile].type;
+
+			(function traverse(x, y) {
+				if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
+					return;
+				}
+
+				var tile = y * board.columns + x;
+
+				if (typeof matches[tile] !== 'undefined' || board[tile].type !== type) {
+					return;
+				}
+
+				matches[tile] = tile;
+
+				/* Check adjacent tiles */
+				traverse(x - 1, y);
+				traverse(x + 1, y);
+				traverse(x, y - 1);
+				traverse(x, y + 1);
+			}(x, y));
+
+			/* Filter out the 'undefined' space-fillers in the array */
+			return matches.filter(function (x) {
+				return x;
+			});
+		}
+
 		function reset() {
 			board = createBoard(20, 20, 20);
 		}
 
 		function start() {
 			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
-			selection = []; // selected tiles
+			selected = []; // selected tiles
 			reset();
 		}
 
 		/* Convert x, y mouse coordinates to tile index */
 		function pickTile(x, y) {
-			var index = Math.floor(y / 20) * 20 + Math.floor(x / 20);
+			var index = Math.floor(y / board.rows) * board.columns + Math.floor(x / board.columns);
 			if (index < 0 || index >= board.length) {
 				return -1;
 			}
@@ -87,7 +123,6 @@
 		function mousedown(x, y) {
 			var index = pickTile(x, y);
 			if (index !== -1) {
-				board[index].type = 2;
 			}
 
 			return false;
@@ -96,7 +131,7 @@
 		function mousemove(x, y) {
 			var index = pickTile(x, y);
 			if (index !== -1) {
-				board[pickTile(x, y)].selected = true;
+				selected = getAdjacentTiles(index);
 			}
 
 			return false;
@@ -106,12 +141,16 @@
 		}
 
 		function render(ctx, fps) {
+			/* Draw tiles */
 			board.forEach(function (tile) {
 				ctx.putImageData(tiles[tile.type], tile.x, tile.y);
-				if (tile.selected) {
-					ctx.fillStyle = 'rgba(255, 255, 255, .5)';
-					ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
-				}
+			});
+
+			/* Highlight selected tiles */
+			ctx.fillStyle = 'rgba(255, 255, 255, .5)';
+			selected.forEach(function (index) {
+				var tile = board[index];
+				ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
 			});
 
 			ctx.fillStyle = '#fff';
