@@ -29,6 +29,12 @@
 			});
 		}
 
+		function darkenColor(color) {
+			return color.replace(/[\da-f]/g, function (x) {
+				return Math.max(0, parseInt(x, 16) - 7);
+			});
+		}
+
 		/* Pre-render the gradient color tiles */
 		function createTiles(size, colors) {
 			var ctx, buffer = document.createElement('canvas');
@@ -43,6 +49,9 @@
 
 				ctx.fillStyle = gradient;
 				ctx.fillRect(0, 0, size, size);
+				ctx.strokeStyle = darkenColor(color);
+				ctx.strokeWidth = 4.0;
+				ctx.strokeRect(0, 0, size, size);
 
 				return ctx.getImageData(0, 0, size, size);
 			});
