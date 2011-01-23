@@ -2,7 +2,7 @@
 	var game, engine, document = window.document;
 
 	game = (function () {
-		var width, height, board, tiles, selected;
+		var width, height, board, tiles, selected, score;
 		width = 400;
 		height =  450;
 
@@ -162,6 +162,8 @@
 					board[index.x][index.y].type = 0;
 				});
 
+				score += Math.pow(2, selected.length);
+
 				fixBoard();
 				selected = getSelectedTiles(x, y);
 			}
@@ -176,6 +178,7 @@
 
 		function reset() {
 			board = createBoard(10, 10, 40);
+			score = 0;
 		}
 
 		function start() {
@@ -217,7 +220,7 @@
 			ctx.fillStyle = '#000';
 			ctx.font = '20px calibri, verdana, tahoma, serif';
 			ctx.textBaseline = 'top';
-			ctx.fillText('FPS: ' + fps, 10, 410);
+			ctx.fillText('Score: ' + score, 0, 410);
 		}
 
 		return ({
