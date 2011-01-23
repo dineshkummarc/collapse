@@ -41,7 +41,6 @@
 			board.rows = rows;
 			board.tileSize = size;
 
-			window.board = board;
 			return board;
 		}
 
@@ -279,7 +278,6 @@
 			
 			return canvas.getContext('2d');
 		}());
-		window.ctx = ctx;
 
 		/* Update/render loop */
 		lastUpdate = Date.now();
