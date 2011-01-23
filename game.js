@@ -40,6 +40,8 @@
 			board.columns = columns;
 			board.rows = rows;
 			board.tileSize = size;
+
+			window.board = board;
 			return board;
 		}
 
@@ -90,6 +92,10 @@
 			y = coords.y;
 			type = board[x][y].type;
 
+			if (type === 0) {
+				return [];
+			}
+
 			(function traverse(x, y) {
 				if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
 					return;
@@ -101,7 +107,7 @@
 					return;
 				}
 
-				matches[tile] = tile;
+				matches[tile] = {x: x, y: y};
 
 				/* Check adjacent tiles */
 				traverse(x - 1, y);
@@ -125,15 +131,38 @@
 
 			return getAdjacentTiles(tile);
 		}
-			
+
+		/* Place tiles in correct positions after a deletion */
+		function fixBoard() {
+			board.forEach(function (column, key) {
+				/* Remove deleted tiles from column */
+				var result = column.filter(function (tile) {
+					return tile.type !== 0;
+				});
+
+				/* Add blank tiles to top to keep array length consistent */
+				while (result.length < column.length) {
+					result.unshift({ x: 0, y: 0, tx: 0, ty: 0, size: 0, type: 0 });
+				}
+
+				/* Update vertical position of remaining tiles */
+				board[key] = result.map(function (tile, index) {
+					tile.ty = index * tile.size;
+					return tile;
+				});
+			});
+		}
 
 		function mousedown(x, y) {
 			selected = getSelectedTiles(x, y);
 
 			if (selected.length > 1) {
+				/* Delete selected tiles */
 				selected.forEach(function (index) {
-					board[index % board.columns][Math.floor(index / board.rows)].type = 0;
+					board[index.x][index.y].type = 0;
 				});
+
+				fixBoard();
 			}
 
 			return false;
@@ -145,19 +174,27 @@
 		}
 
 		function reset() {
-			board = createBoard(20, 20, 20);
+			board = createBoard(10, 10, 40);
 		}
 
 		function start() {
-			tiles = createTiles(20, ['#fff', '#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
+			tiles = createTiles(40, ['#fff', '#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
 			selected = []; // selected tiles
 			reset();
 		}
 
 		function update(ms) {
+			board.forEach(function (column) {
+				column.forEach(function (tile) {
+					tile.y = tile.ty;
+				});
+			});
 		}
 
 		function render(ctx, fps) {
+			ctx.fillStyle = '#fff';
+			ctx.fillRect(0, 0, width, height);
+
 			/* Draw tiles */
 			board.forEach(function (column) {
 				column.forEach(function (tile) {
@@ -170,12 +207,10 @@
 			/* Highlight selected tiles */
 			ctx.fillStyle = 'rgba(255, 255, 255, .5)';
 			selected.forEach(function (index) {
-				var tile = board[index % board.columns][Math.floor(index / board.rows)];
+				var tile = board[index.x][index.y];
 				ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
 			});
 
-			ctx.fillStyle = '#fff';
-			ctx.fillRect(0, 400, width, height);
 			ctx.fillStyle = '#000';
 			ctx.font = '20px calibri, verdana, tahoma, serif';
 			ctx.textBaseline = 'top';
