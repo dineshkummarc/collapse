@@ -1,4 +1,4 @@
-(function () {
+(function (window) {
 	var game, engine, board;
 
 	/* Actual game */
@@ -19,23 +19,26 @@
 		}
 
 		function createBoard(columns, rows, size) {
-			var board = createArray(columns * rows).map(function (value, key) {
-				var tile = {
-					x: (key % columns) * size,
-					y: Math.floor(key / rows) * size,
-					type: rand(0, tiles.length),
-					size: size
-				};
+			var board = createArray(columns).map(function (column, x) {
+				return createArray(rows).map(function (row, y) {
+					var tile = {
+						x: x * size,
+						y: y * size,
+						type: rand(1, tiles.length),
+						size: size
+					};
 
-				/* Setup new "target" positions (for animation) */
-				tile.tx = tile.x; // target x
-				tile.ty = tile.y; // target y
+					/* Setup new "target" positions (for animation) */
+					tile.tx = tile.x; // target x
+					tile.ty = tile.y; // target y
 
-				return tile;
+					return tile;
+				});
 			});
 
 			board.columns = columns;
 			board.rows = rows;
+			board.tileSize = size;
 			return board;
 		}
 
@@ -67,12 +70,11 @@
 			});
 		}
 
-		function getAdjacentTiles(tile) {
-			var x, y, type, matches = [];
-			x = Math.floor(tile % board.columns);
-			y = Math.floor(tile / board.rows);
-
-			type = board[tile].type;
+		function getAdjacentTiles(coords) {
+			var type, matches = [];
+			x = coords.x;
+			y = coords.y;
+			type = board[x][y].type;
 
 			(function traverse(x, y) {
 				if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
@@ -81,7 +83,7 @@
 
 				var tile = y * board.columns + x;
 
-				if (typeof matches[tile] !== 'undefined' || board[tile].type !== type) {
+				if (typeof matches[tile] !== 'undefined' || board[x][y].type !== type) {
 					return;
 				}
 
@@ -100,41 +102,46 @@
 			});
 		}
 
-		function reset() {
-			board = createBoard(20, 20, 20);
-		}
-
-		function start() {
-			tiles = createTiles(20, ['#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
-			selected = []; // selected tiles
-			reset();
-		}
-
 		/* Convert x, y mouse coordinates to tile index */
 		function pickTile(x, y) {
-			var index = Math.floor(y / board.rows) * board.columns + Math.floor(x / board.columns);
-			if (index < 0 || index >= board.length) {
+			var x, y;
+			x = Math.floor(x / board.tileSize);
+			y = Math.floor(y / board.tileSize);
+
+			if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
 				return -1;
 			}
 
-			return index;
+			return { x: x, y: y };
 		}
 
 		function mousedown(x, y) {
-			var index = pickTile(x, y);
-			if (index !== -1) {
+			var tile = pickTile(x, y);
+			if (tile !== -1) {
 			}
 
 			return false;
 		}
 
 		function mousemove(x, y) {
-			var index = pickTile(x, y);
-			if (index !== -1) {
-				selected = getAdjacentTiles(index);
+			var tile = pickTile(x, y);
+			if (tile !== -1) {
+				selected = getAdjacentTiles(tile);
+			} else {
+				selected = [];
 			}
 
 			return false;
+		}
+
+		function reset() {
+			board = createBoard(20, 20, 20);
+		}
+
+		function start() {
+			tiles = createTiles(20, ['#fff', '#f00', '#0c0', '#00f', '#dd0', '#0af', '#c0f']);
+			selected = []; // selected tiles
+			reset();
 		}
 
 		function update(ms) {
@@ -142,14 +149,18 @@
 
 		function render(ctx, fps) {
 			/* Draw tiles */
-			board.forEach(function (tile) {
-				ctx.putImageData(tiles[tile.type], tile.x, tile.y);
+			board.forEach(function (column) {
+				column.forEach(function (tile) {
+					if (tile.type !== 0) {
+						ctx.putImageData(tiles[tile.type], tile.x, tile.y);
+					}
+				});
 			});
 
 			/* Highlight selected tiles */
 			ctx.fillStyle = 'rgba(255, 255, 255, .5)';
 			selected.forEach(function (index) {
-				var tile = board[index];
+				var tile = board[index % board.columns][Math.floor(index / board.rows)];
 				ctx.fillRect(tile.x, tile.y, tile.size, tile.size);
 			});
 
@@ -168,7 +179,10 @@
 			render: render,
 			start: 	start,
 			mousedown: mousedown,
-			mousemove: mousemove
+			mousemove: mousemove,
+			mouseout: function () {
+				selected = [];
+			}
 		});
 	}());
 
@@ -194,7 +208,7 @@
 			}, false);
 
 			/* Mouse events for canvas */
-			['mousedown', 'mousemove'].forEach(function (event) {
+			['mousedown', 'mousemove', 'mouseout'].forEach(function (event) {
 				if (typeof game[event] === 'function') {
 					canvas.addEventListener(event, function (e) {
 						var x, y;
@@ -248,4 +262,4 @@
 	}());
 
 	engine.start();
-}());
+}(this));
