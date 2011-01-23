@@ -1,7 +1,6 @@
 (function (window) {
-	var game, engine, board;
+	var game, engine, document = window.document;
 
-	/* Actual game */
 	game = (function () {
 		var width, height, board, tiles, selected;
 		width = 400;
@@ -12,10 +11,12 @@
 		}
 
 		function createArray(size, defaultValue) {
-			var defaultValue = defaultValue || 0;
-			return new Array(size).join('x').split('x').map(function () {
-				return defaultValue;
-			});
+			var j, result = [];
+			for (j = 0; j < size; j += 1) {
+				result.push(defaultValue || 0);
+			}
+			
+			return result;
 		}
 
 		function createBoard(columns, rows, size) {
@@ -71,7 +72,7 @@
 		}
 
 		function getAdjacentTiles(coords) {
-			var type, matches = [];
+			var x, y, type, matches = [];
 			x = coords.x;
 			y = coords.y;
 			type = board[x][y].type;
@@ -103,10 +104,10 @@
 		}
 
 		/* Convert x, y mouse coordinates to tile index */
-		function pickTile(x, y) {
+		function pickTile(mx, my) {
 			var x, y;
-			x = Math.floor(x / board.tileSize);
-			y = Math.floor(y / board.tileSize);
+			x = Math.floor(mx / board.tileSize);
+			y = Math.floor(my / board.tileSize);
 
 			if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
 				return -1;
@@ -118,6 +119,7 @@
 		function mousedown(x, y) {
 			var tile = pickTile(x, y);
 			if (tile !== -1) {
+				selected = getAdjacentTiles(tile);
 			}
 
 			return false;
@@ -177,7 +179,7 @@
 			height: height,
 			update: update,
 			render: render,
-			start: 	start,
+			start: start,
 			mousedown: mousedown,
 			mousemove: mousemove,
 			mouseout: function () {
@@ -250,7 +252,7 @@
 
 			frames += 1;
 			lastUpdate = Date.now();
-			setTimeout(loop, 40);
+			window.setTimeout(loop, 40);
 		}
 
 		return ({
