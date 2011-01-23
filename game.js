@@ -163,6 +163,7 @@
 				});
 
 				fixBoard();
+				selected = getSelectedTiles(x, y);
 			}
 
 			return false;
@@ -183,10 +184,12 @@
 			reset();
 		}
 
-		function update(ms) {
+		function update(delta) {
 			board.forEach(function (column) {
 				column.forEach(function (tile) {
-					tile.y = tile.ty;
+					if (tile.y !== tile.ty) {
+						tile.y = Math.min(tile.y + .35 * delta, tile.ty);
+					}
 				});
 			});
 		}
@@ -295,7 +298,7 @@
 
 			frames += 1;
 			lastUpdate = Date.now();
-			window.setTimeout(loop, 40);
+			window.setTimeout(loop, 20);
 		}
 
 		return ({
