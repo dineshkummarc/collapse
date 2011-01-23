@@ -71,6 +71,19 @@
 			});
 		}
 
+		/* Convert x, y mouse coordinates to tile index */
+		function pickTile(mx, my) {
+			var x, y;
+			x = Math.floor(mx / board.tileSize);
+			y = Math.floor(my / board.tileSize);
+
+			if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
+				return -1;
+			}
+
+			return { x: x, y: y };
+		}
+
 		function getAdjacentTiles(coords) {
 			var x, y, type, matches = [];
 			x = coords.x;
@@ -103,36 +116,31 @@
 			});
 		}
 
-		/* Convert x, y mouse coordinates to tile index */
-		function pickTile(mx, my) {
-			var x, y;
-			x = Math.floor(mx / board.tileSize);
-			y = Math.floor(my / board.tileSize);
-
-			if (x < 0 || x >= board.columns || y < 0 || y >= board.rows) {
-				return -1;
+		/* Determine selected tiles based on mouse position */
+		function getSelectedTiles(x, y) {
+			var tile = pickTile(x, y);
+			if (tile === -1) {
+				return [];
 			}
 
-			return { x: x, y: y };
+			return getAdjacentTiles(tile);
 		}
+			
 
 		function mousedown(x, y) {
-			var tile = pickTile(x, y);
-			if (tile !== -1) {
-				selected = getAdjacentTiles(tile);
+			selected = getSelectedTiles(x, y);
+
+			if (selected.length > 1) {
+				selected.forEach(function (index) {
+					board[index % board.columns][Math.floor(index / board.rows)].type = 0;
+				});
 			}
 
 			return false;
 		}
 
 		function mousemove(x, y) {
-			var tile = pickTile(x, y);
-			if (tile !== -1) {
-				selected = getAdjacentTiles(tile);
-			} else {
-				selected = [];
-			}
-
+			selected = getSelectedTiles(x, y);
 			return false;
 		}
 
